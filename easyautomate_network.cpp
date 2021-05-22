@@ -2,6 +2,8 @@
 #include "Arduino.h"
 #include "easyautomate_network.h"
 
+X509List cert(trustRoot);
+
 EasyautomateNetwork::EasyautomateNetwork(String device_name, String api_key, WiFiClientSecure client) {
   name = device_name;
   key = api_key;
@@ -25,14 +27,7 @@ void EasyautomateNetwork::setCACert() {
   Serial.print("Current time: ");
   Serial.print(asctime(&timeinfo));
 
-  // Load root certificate in DER format into WiFiClientSecure object
-  bool res = client.setCACert(caCert, caCertLen);
-  if (!res) {
-    Serial.println("Failed to load root CA certificate!");
-    while (true) {
-      yield();
-    }
-  }
+  client.setTrustAnchors(&cert);
 }
 
 DynamicJsonDocument EasyautomateNetwork::getSettings() {
@@ -44,19 +39,13 @@ DynamicJsonDocument EasyautomateNetwork::getSettings() {
     return jsonDocument;
   }
 
-  // Verify validity of server's certificate
-  if (!client.verifyCertChain(host)) {
-    jsonDocument["error"] = "certificate verification failed";
-    return jsonDocument;
-  }
-
   String url = "/api/v1/devices/" + urlencode(name);
   Serial.print("requesting URL: ");
   Serial.println(url);
 
   client.print(String("GET ") + url + "?current_settings=true" + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
-               "User-Agent: BuildFailureDetectorESP8266\r\n" +
+               "User-Agent: ESP8266Device\r\n" +
                "Api-Key: " + key + "\r\n" +
                "Connection: close\r\n\r\n");
 
