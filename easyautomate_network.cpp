@@ -60,7 +60,6 @@ DynamicJsonDocument EasyautomateNetwork::getSettings() {
   }
   while (client.available()) {
     String line = client.readStringUntil('\r');
-    Serial.println(line);
     if (line.substring(9, 15) == "200 OK") {
       status_ok = true;
     }
@@ -80,3 +79,56 @@ DynamicJsonDocument EasyautomateNetwork::getSettings() {
   jsonDocument["error"] = "No JSON data";
   return jsonDocument;
 }
+
+DynamicJsonDocument EasyautomateNetwork::sendReports(String reports) {
+  DynamicJsonDocument jsonDocument(1024);
+  boolean status_ok = false;
+
+  if (!client.connect(host, httpsPort)) {
+    jsonDocument["error"] = "connection failed";
+    return jsonDocument;
+  }
+
+  String url = "/api/v1/measurements";
+  Serial.print("requesting URL: ");
+  Serial.println(url);
+
+  client.println(String("POST ") + url + " HTTP/1.1");
+  client.println("Host: " + String(host));
+  client.println("Accept: application/json");
+  client.println("Content-Type: application/json");
+  client.println("Content-Length: " + String(reports.length()));
+  client.println("Api-Key: " + key);
+  client.println();
+  client.println(reports);
+
+  unsigned long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 5000) {
+      client.stop();
+      jsonDocument["error"] = "Client Timeout !";
+      return jsonDocument;
+    }
+  }
+  while (client.available()) {
+    String line = client.readStringUntil('\r');
+    if (line.substring(9, 15) == "200 OK") {
+      status_ok = true;
+    }
+    else if (line.substring(9, 25) == "401 Unauthorized") {
+      status_ok = false;
+      jsonDocument["error"] = "401 Unauthorized";
+      return jsonDocument;
+    }
+
+    DeserializationError error = deserializeJson(jsonDocument, line);
+
+    if (!error && line.toInt() == 0) {
+      return jsonDocument;
+    }
+  }
+  Serial.println("error");
+  jsonDocument["error"] = "No JSON data";
+  return jsonDocument;
+}
+

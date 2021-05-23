@@ -25,6 +25,7 @@ public:
   EasyautomateNetwork(String device_name, String api_key, WiFiClientSecure client);
   void setCACert();
   DynamicJsonDocument getSettings();
+  DynamicJsonDocument sendReports(String reports);
 };
 
 #endif
