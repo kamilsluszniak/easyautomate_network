@@ -20,6 +20,7 @@ private:
   String name;
   String key;
   WiFiClientSecure client;
+  DynamicJsonDocument handleRequest(String payload);
 
 public:
   EasyautomateNetwork(String device_name, String api_key, WiFiClientSecure client);

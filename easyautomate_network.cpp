@@ -4,7 +4,7 @@
 
 X509List cert(trustRoot);
 
-EasyautomateNetwork::EasyautomateNetwork(String device_name, String api_key, WiFiClientSecure client) {
+EasyautomateNetwork::EasyautomateNetwork (String device_name, String api_key, WiFiClientSecure client) {
   name = device_name;
   key = api_key;
   client = client;
@@ -31,56 +31,29 @@ void EasyautomateNetwork::setCACert() {
 }
 
 DynamicJsonDocument EasyautomateNetwork::getSettings() {
-  DynamicJsonDocument jsonDocument(1024);
-  boolean status_ok = false;
-
-  if (!client.connect(host, httpsPort)) {
-    jsonDocument["error"] = "connection failed";
-    return jsonDocument;
-  }
-
   String url = "/api/v1/devices/" + urlencode(name);
-  Serial.print("requesting URL: ");
-  Serial.println(url);
-
-  client.print(String("GET ") + url + "?current_settings=true" + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "User-Agent: ESP8266Device\r\n" +
-               "Api-Key: " + key + "\r\n" +
-               "Connection: close\r\n\r\n");
-
-
-  unsigned long timeout = millis();
-  while (client.available() == 0) {
-    if (millis() - timeout > 5000) {
-      client.stop();
-      jsonDocument["error"] = "Client Timeout !";
-      return jsonDocument;
-    }
-  }
-  while (client.available()) {
-    String line = client.readStringUntil('\r');
-    if (line.substring(9, 15) == "200 OK") {
-      status_ok = true;
-    }
-    else if (line.substring(9, 25) == "401 Unauthorized") {
-      status_ok = false;
-      jsonDocument["error"] = "401 Unauthorized";
-      return jsonDocument;
-    }
-
-    DeserializationError error = deserializeJson(jsonDocument, line);
-
-    if (!error && line.toInt() == 0) {
-      return jsonDocument;
-    }
-  }
-  Serial.println("error");
-  jsonDocument["error"] = "No JSON data";
-  return jsonDocument;
+  String payload = String("GET ") + url + "?current_settings=true" + " HTTP/1.1\r\n" +
+                  "Host: " + host + "\r\n" +
+                  "User-Agent: ESP8266Device\r\n" +
+                  "Api-Key: " + key + "\r\n" +
+                  "Connection: close\r\n\r\n";
+  return handleRequest(payload);
 }
 
 DynamicJsonDocument EasyautomateNetwork::sendReports(String reports) {
+  String url = "/api/v1/measurements";
+  String payload = String("POST ") + url + " HTTP/1.1\r\n" +
+                  "Host: " + host + "\r\n" +
+                  "User-Agent: ESP8266Device\r\n" +
+                  "Accept: application/json" + "\r\n" +
+                  "Content-Type: application/json" + "\r\n" +
+                  "Content-Length: " + String(reports.length()) + "\r\n" +
+                  "Api-Key: " + key + "\r\n" +
+                  "\r\n" + reports;
+  return handleRequest(payload);
+}
+
+DynamicJsonDocument EasyautomateNetwork::handleRequest(String payload) {
   DynamicJsonDocument jsonDocument(1024);
   boolean status_ok = false;
 
@@ -89,18 +62,7 @@ DynamicJsonDocument EasyautomateNetwork::sendReports(String reports) {
     return jsonDocument;
   }
 
-  String url = "/api/v1/measurements";
-  Serial.print("requesting URL: ");
-  Serial.println(url);
-
-  client.println(String("POST ") + url + " HTTP/1.1");
-  client.println("Host: " + String(host));
-  client.println("Accept: application/json");
-  client.println("Content-Type: application/json");
-  client.println("Content-Length: " + String(reports.length()));
-  client.println("Api-Key: " + key);
-  client.println();
-  client.println(reports);
+  client.print(payload);
 
   unsigned long timeout = millis();
   while (client.available() == 0) {
@@ -131,4 +93,11 @@ DynamicJsonDocument EasyautomateNetwork::sendReports(String reports) {
   jsonDocument["error"] = "No JSON data";
   return jsonDocument;
 }
+
+
+
+
+
+
+
 
