@@ -11,7 +11,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 
-static const char* host = "www.easyautomate.me";
+static const char *host = "www.easyautomate.me";
 static const int httpsPort = 443;
 
 class EasyautomateNetwork

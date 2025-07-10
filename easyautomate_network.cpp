@@ -1,4 +1,3 @@
-
 #include "Arduino.h"
 #include "easyautomate_network.h"
 
@@ -13,8 +12,8 @@ EasyautomateNetwork::EasyautomateNetwork (String device_name, String api_key, Wi
 void EasyautomateNetwork::setCACert() {
   // Synchronize time useing SNTP. This is necessary to verify that
   // the TLS certificates offered by the server are currently valid.
-  Serial.print("Setting time using SNTP");
-  configTime(8 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.print("Setting time using SNTP, with google.com");
+  configTime(8 * 3600, 0, "time.google.com", "pool.ntp.org", "time.nist.gov");
   time_t now = time(nullptr);
   while (now < 1000) {
     delay(500);
@@ -58,6 +57,10 @@ DynamicJsonDocument EasyautomateNetwork::handleRequest(String payload) {
   boolean status_ok = false;
 
   if (!client.connect(host, httpsPort)) {
+    char buf[256];
+    client.getLastSSLError(buf,256);
+    Serial.print("WiFiClientSecure SSL error: ");
+    Serial.println(buf);
     jsonDocument["error"] = "connection failed";
     return jsonDocument;
   }
