@@ -8,7 +8,7 @@
 #include "easyautomate_network.h"
 #include <time.h>
 #include "ca_cert.h"
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <WiFiClientSecure.h>
 
 static const char *host = "www.easyautomate.me";
